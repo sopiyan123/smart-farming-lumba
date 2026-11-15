@@ -1,0 +1,300 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lumba-Lumba · Smart Farming</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=Instrument+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#eef3ee; --card:#fbfdfb; --ink:#17302b; --muted:#5d7570; --line:#d5e0d9;
+  --dry:#d9b574; --ok:#5fae7a; --wet:#5b9bd1; --bad:#c8503f; --accent:#1f6f5c; --accent-ink:#fff;
+  --head:"Bricolage Grotesque","Trebuchet MS",system-ui,sans-serif;
+  --body:"Instrument Sans",system-ui,-apple-system,"Segoe UI",sans-serif;
+}
+@media (prefers-color-scheme:dark){
+  :root{--bg:#0f1a17;--card:#16241f;--ink:#e4efe9;--muted:#8aa399;--line:#263a33;
+    --dry:#b48d4a;--ok:#4a9a68;--wet:#4a86b8;--bad:#e0705e;--accent:#5cc2a2;--accent-ink:#0f1a17}
+}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--bg);color:var(--ink);font:400 15px/1.5 var(--body);padding:env(safe-area-inset-top,0) 0 env(safe-area-inset-bottom,0)}
+.wrap{max-width:1040px;margin:0 auto;padding:20px 16px 40px}
+header{display:flex;flex-wrap:wrap;gap:12px;align-items:center;justify-content:space-between;margin-bottom:20px}
+h1{font:700 26px/1.1 var(--head);margin:0;letter-spacing:-.01em}
+header p{margin:2px 0 0;color:var(--muted);font-size:14px}
+.chips{display:flex;gap:8px;flex-wrap:wrap}
+.chip{display:inline-flex;align-items:center;gap:7px;padding:6px 12px;border:1px solid var(--line);border-radius:999px;background:var(--card);font-size:13px;font-weight:500}
+.dot{width:9px;height:9px;border-radius:50%;background:var(--muted)}
+.chip.on .dot{background:var(--ok)}
+.chip.off .dot{background:var(--bad)}
+.chip.wait .dot{background:var(--dry)}
+
+.layout{display:grid;gap:14px;grid-template-columns:1fr}
+@media (min-width:780px){.layout{grid-template-columns:330px 1fr}}
+.card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:16px}
+.card h2{font:600 14px/1.3 var(--body);color:var(--muted);margin:0 0 10px}
+.val{font:700 34px/1 var(--head);letter-spacing:-.02em}
+.val small{font:500 16px var(--body);color:var(--muted);margin-left:3px;letter-spacing:0}
+.sub{color:var(--muted);font-size:13px;margin-top:6px}
+
+/* Soil: elemen utama */
+.soil{display:flex;gap:18px;align-items:stretch}
+.soil .big{font:700 64px/1 var(--head);letter-spacing:-.03em}
+.soil .big small{font-size:26px;color:var(--muted);margin-left:2px}
+.badge{display:inline-block;margin-top:10px;padding:4px 12px;border-radius:999px;font-weight:600;font-size:13px;color:#fff;background:var(--muted)}
+.badge.dry{background:var(--dry);color:#2b2108}
+.badge.ok{background:var(--ok);color:#08210f}
+.badge.wet{background:var(--wet);color:#071a2b}
+.gauge{position:relative;flex:none;width:58px;height:220px;border-radius:14px;overflow:hidden;
+  background:linear-gradient(to top,var(--dry) 0 40%,var(--ok) 40% 60%,var(--wet) 60% 100%)}
+.gauge .mask{position:absolute;left:0;right:0;top:0;height:100%;background:var(--card);opacity:.8;border-bottom:3px solid var(--ink);transition:height .8s ease}
+.ticks{position:relative;width:34px;flex:none;font-size:12px;color:var(--muted)}
+.ticks span{position:absolute;left:0;transform:translateY(50%)}
+.soilinfo{display:flex;flex-direction:column;justify-content:space-between;min-width:0}
+.rule{font-size:13px;color:var(--muted)}
+
+.grid{display:grid;gap:14px;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));align-content:start}
+svg.spark{width:100%;height:34px;margin-top:10px;display:block}
+.spark path{fill:none;stroke:var(--accent);stroke-width:1.6;vector-effect:non-scaling-stroke;stroke-linejoin:round}
+.bar{height:12px;border-radius:99px;background:var(--line);overflow:hidden;margin-top:12px}
+.bar i{display:block;height:100%;width:0;background:var(--wet);border-radius:99px;transition:width .8s ease,background .3s}
+.state{display:flex;align-items:center;gap:10px;font:700 22px/1.2 var(--head)}
+.state .dot{width:14px;height:14px}
+.state.on .dot{background:var(--ok);animation:pulse 1.4s ease-in-out infinite}
+.state.bad .dot{background:var(--bad);animation:pulse .7s ease-in-out infinite}
+@keyframes pulse{50%{opacity:.35}}
+.card.alert{border-color:var(--bad);box-shadow:0 0 0 1px var(--bad) inset}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+
+.row2{display:grid;gap:14px;grid-template-columns:1fr;margin-top:14px}
+@media (min-width:780px){.row2{grid-template-columns:330px 1fr}}
+.ctl{display:flex;align-items:center;gap:12px;margin:6px 0 12px}
+input[type=range]{flex:1;accent-color:var(--accent);height:32px}
+.hz{font:700 20px var(--head);min-width:78px;text-align:right}
+.presets{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px}
+button{font:500 14px var(--body);color:var(--ink);background:transparent;border:1px solid var(--line);border-radius:10px;padding:9px 14px;cursor:pointer;min-height:40px}
+button:hover{border-color:var(--accent)}
+button.primary{background:var(--accent);color:var(--accent-ink);border-color:var(--accent);font-weight:600;width:100%}
+button:disabled{opacity:.5;cursor:not-allowed}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+ul.log{list-style:none;margin:0;padding:0;max-height:280px;overflow-y:auto;font-size:14px}
+.log li{display:flex;gap:10px;padding:8px 0;border-bottom:1px solid var(--line)}
+.log li:last-child{border:0}
+.log time{color:var(--muted);flex:none;font-variant-numeric:tabular-nums}
+.log li.bad{color:var(--bad);font-weight:600}
+.empty{color:var(--muted);padding:6px 0}
+footer{margin-top:18px;color:var(--muted);font-size:12.5px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div>
+      <h1>Lumba-Lumba</h1>
+      <p>Pemantauan dan penyiraman otomatis · <span id="seen">belum ada data</span></p>
+    </div>
+    <div class="chips">
+      <span class="chip wait" id="chipBroker"><span class="dot"></span><span>Broker: menyambung</span></span>
+      <span class="chip wait" id="chipDev"><span class="dot"></span><span>Perangkat: menunggu</span></span>
+    </div>
+  </header>
+
+  <div class="layout">
+    <section class="card" aria-label="Kelembapan tanah">
+      <h2>Kelembapan tanah</h2>
+      <div class="soil">
+        <div class="gauge" aria-hidden="true"><div class="mask" id="mask"></div></div>
+        <div class="ticks" aria-hidden="true"><span style="bottom:60%">60</span><span style="bottom:40%">40</span></div>
+        <div class="soilinfo">
+          <div>
+            <div class="big"><span id="soil">--</span><small>%</small></div>
+            <span class="badge" id="soilBadge">menunggu</span>
+          </div>
+          <div class="rule">Pompa menyala di bawah 40%, berhenti di atas 60%.</div>
+        </div>
+      </div>
+      <svg class="spark" id="sparkSoil" viewBox="0 0 100 30" preserveAspectRatio="none" aria-hidden="true"><path d=""/></svg>
+    </section>
+
+    <div class="grid">
+      <section class="card">
+        <h2>Suhu udara</h2>
+        <div class="val"><span id="temp">--</span><small>°C</small></div>
+        <svg class="spark" id="sparkTemp" viewBox="0 0 100 30" preserveAspectRatio="none" aria-hidden="true"><path d=""/></svg>
+      </section>
+      <section class="card">
+        <h2>Kelembapan udara</h2>
+        <div class="val"><span id="hum">--</span><small>%</small></div>
+        <div class="bar"><i id="humBar" style="background:var(--accent)"></i></div>
+      </section>
+      <section class="card" id="cardTank">
+        <h2>Isi tandon</h2>
+        <div class="val"><span id="tank">--</span><small>%</small></div>
+        <div class="bar"><i id="tankBar"></i></div>
+        <div class="sub" id="dist">Jarak ke air: --</div>
+      </section>
+      <section class="card">
+        <h2>Pompa air</h2>
+        <div class="state" id="pumpState"><span class="dot"></span><span id="pumpText">--</span></div>
+        <div class="sub" id="pumpSub">Menunggu data</div>
+      </section>
+      <section class="card" id="cardAlarm">
+        <h2>Alarm tandon</h2>
+        <div class="state" id="alarmState"><span class="dot"></span><span id="alarmText">--</span></div>
+        <div class="sub" id="alarmSub">Menunggu data</div>
+      </section>
+    </div>
+  </div>
+
+  <div class="row2">
+    <section class="card">
+      <h2>Frekuensi buzzer</h2>
+      <div class="ctl">
+        <input type="range" id="freq" min="100" max="5000" step="50" value="2000" aria-label="Frekuensi buzzer">
+        <div class="hz"><span id="freqVal">2000</span> Hz</div>
+      </div>
+      <div class="presets">
+        <button data-f="1000">1000</button><button data-f="2000">2000</button>
+        <button data-f="2700">2700</button><button data-f="4000">4000</button>
+      </div>
+      <button class="primary" id="send" disabled>Kirim ke perangkat</button>
+      <div class="sub" id="freqNow">Frekuensi di perangkat: --</div>
+    </section>
+    <section class="card">
+      <h2>Riwayat kejadian</h2>
+      <ul class="log" id="log"><li class="empty">Belum ada kejadian. Pompa, alarm, dan perubahan frekuensi akan muncul di sini.</li></ul>
+    </section>
+  </div>
+
+  <footer>Broker EMQX Cloud lewat WebSocket aman (wss). Data diterima dari topik smartfarm/lumba/#.</footer>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/mqtt@5.10.1/dist/mqtt.min.js"></script>
+<script>
+// ======================= KONFIGURASI =======================
+const CFG = {
+  url : "wss://j07117bb.ala.asia-southeast1.emqxsl.com:8084/mqtt", // WSS EMQX Cloud
+  user: "Lumba_Lumba",   // sebaiknya buat user khusus dashboard di EMQX
+  pass: "lumba123",
+  base: "smartfarm/lumba"
+};
+
+const $ = id => document.getElementById(id);
+const hist = { soil: [], temp: [] };
+const MAXPTS = 40;
+let lastSeen = 0, firstLog = true;
+
+function setChip(el, cls, text){ el.className = "chip " + cls; el.lastElementChild.textContent = text; }
+
+function spark(svgId, arr){
+  const p = $(svgId).querySelector("path");
+  if(arr.length < 2){ p.setAttribute("d",""); return; }
+  const mn = Math.min(...arr), mx = Math.max(...arr), r = (mx - mn) || 1;
+  p.setAttribute("d", arr.map((v,i)=>
+    (i?"L":"M") + (i/(arr.length-1)*100).toFixed(1) + " " + (28 - (v-mn)/r*26).toFixed(1)).join(" "));
+}
+
+function addLog(text, bad){
+  if(firstLog){ $("log").innerHTML = ""; firstLog = false; }
+  const li = document.createElement("li");
+  if(bad) li.className = "bad";
+  const t = document.createElement("time");
+  t.textContent = new Date().toLocaleTimeString("id-ID");
+  const s = document.createElement("span");
+  s.textContent = text;
+  li.append(t, s);
+  $("log").prepend(li);
+  while($("log").children.length > 40) $("log").lastChild.remove();
+}
+
+function render(d){
+  lastSeen = Date.now();
+  $("seen").textContent = "diperbarui " + new Date().toLocaleTimeString("id-ID");
+
+  // tanah
+  $("soil").textContent = d.soil;
+  $("mask").style.height = (100 - Math.min(100, Math.max(0, d.soil))) + "%";
+  const b = $("soilBadge");
+  b.textContent = d.soil_status;
+  b.className = "badge " + (d.soil < 40 ? "dry" : d.soil <= 60 ? "ok" : "wet");
+  hist.soil.push(d.soil); if(hist.soil.length > MAXPTS) hist.soil.shift();
+  spark("sparkSoil", hist.soil);
+
+  // udara
+  $("temp").textContent = d.temp.toFixed(1);
+  hist.temp.push(d.temp); if(hist.temp.length > MAXPTS) hist.temp.shift();
+  spark("sparkTemp", hist.temp);
+  $("hum").textContent = Math.round(d.hum);
+  $("humBar").style.width = Math.min(100, d.hum) + "%";
+
+  // tandon
+  $("tank").textContent = d.tank;
+  $("tankBar").style.width = d.tank + "%";
+  $("tankBar").style.background = d.tank_empty ? "var(--bad)" : "var(--wet)";
+  $("dist").textContent = d.dist < 0 ? "Sensor jarak tidak terbaca" : "Jarak ke air: " + Math.round(d.dist) + " cm";
+
+  // pompa
+  $("pumpState").className = "state" + (d.pump ? " on" : "");
+  $("pumpText").textContent = d.pump ? "Menyala" : "Mati";
+  $("pumpSub").textContent = d.pump ? "Tanah kering, sedang menyiram" : (d.tank_empty ? "Dikunci karena tandon kosong" : "Tidak sedang menyiram");
+
+  // alarm
+  $("alarmState").className = "state" + (d.alarm ? " bad" : "");
+  $("alarmText").textContent = d.alarm ? "Berbunyi" : "Diam";
+  $("alarmSub").textContent = d.alarm ? "Isi ulang tandon" : "Tandon aman";
+  $("cardAlarm").classList.toggle("alert", !!d.alarm);
+  $("cardTank").classList.toggle("alert", !!d.tank_empty);
+
+  $("freqNow").textContent = "Frekuensi di perangkat: " + d.buzzer_hz + " Hz";
+}
+
+// ======================= MQTT =======================
+const client = mqtt.connect(CFG.url, {
+  username: CFG.user, password: CFG.pass,
+  clientId: "web-" + Math.random().toString(16).slice(2, 10),
+  reconnectPeriod: 3000, connectTimeout: 8000, clean: true
+});
+
+client.on("connect", () => {
+  setChip($("chipBroker"), "on", "Broker: tersambung");
+  client.subscribe(CFG.base + "/#");
+  $("send").disabled = false;
+});
+client.on("reconnect", () => setChip($("chipBroker"), "wait", "Broker: menyambung ulang"));
+client.on("offline",   () => { setChip($("chipBroker"), "off", "Broker: terputus"); $("send").disabled = true; });
+client.on("error", e => { setChip($("chipBroker"), "off", "Broker: gagal"); console.error(e); });
+
+client.on("message", (topic, payload) => {
+  const msg = payload.toString();
+  if(topic === CFG.base + "/data"){
+    try { render(JSON.parse(msg)); } catch(e){ console.warn("JSON tidak valid", msg); }
+  } else if(topic === CFG.base + "/status"){
+    setChip($("chipDev"), msg === "online" ? "on" : "off", "Perangkat: " + (msg === "online" ? "online" : "offline"));
+    addLog("Perangkat " + msg, msg !== "online");
+  } else if(topic === CFG.base + "/event"){
+    addLog(msg, /ALARM|kosong/i.test(msg));
+  }
+});
+
+// Tandai data tertunda kalau >12 detik tidak ada kiriman
+setInterval(() => {
+  if(lastSeen && Date.now() - lastSeen > 12000)
+    $("seen").textContent = "data tertunda sejak " + new Date(lastSeen).toLocaleTimeString("id-ID");
+}, 4000);
+
+// ======================= KONTROL BUZZER =======================
+const freq = $("freq");
+freq.addEventListener("input", () => $("freqVal").textContent = freq.value);
+document.querySelectorAll(".presets button").forEach(btn => btn.addEventListener("click", () => {
+  freq.value = btn.dataset.f; $("freqVal").textContent = freq.value;
+}));
+$("send").addEventListener("click", () => {
+  client.publish(CFG.base + "/set/buzzer_freq", String(freq.value), { qos: 0 });
+  addLog("Frekuensi buzzer dikirim: " + freq.value + " Hz");
+});
+</script>
+</body>
+</html>
